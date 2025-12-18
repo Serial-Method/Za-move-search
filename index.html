@@ -8,27 +8,59 @@
     <style>
         body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #f5f5f5; margin: 0; padding: 0; }
         
-        /* 탭 네비게이션 */
-        .nav-tabs { display: flex; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        /* 탭 네비게이션 (Sticky Top) */
+        .nav-tabs { display: flex; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; height: 54px; box-sizing: border-box; }
         .nav-item { flex: 1; padding: 15px; text-align: center; font-weight: bold; cursor: pointer; color: #666; transition: 0.3s; border-bottom: 3px solid transparent; }
         .nav-item.active { color: #4CAF50; border-bottom-color: #4CAF50; }
         
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* 공통 컨테이너 */
         .container-box { max-width: 700px; margin: 0 auto; padding: 15px; }
         
         /* [탭 1: 전체 리스트] */
-        #tab-list { width: 100%; max-width: 100%; background: #fff; min-height: 100vh; }
+        #tab-list { width: 100%; max-width: 100%; background: #fff; min-height: 100vh; position: relative; }
         
-        /* 리스트 컨트롤러 */
-        .list-controls {
-            position: static; 
-            background: #f9f9f9; padding: 15px;
-            border-bottom: 1px solid #ddd;
-            display: flex; justify-content: flex-end;
+        /* [NEW] 플로팅 미니 버튼 (우측 상단 고정) */
+        .floating-filter-btn {
+            position: fixed;
+            top: 60px; /* 탭바(54px) 바로 아래 */
+            right: 10px;
+            z-index: 900;
+            
+            background-color: rgba(76, 175, 80, 0.95);
+            color: white;
+            border: none;
+            
+            /* 크기 최소화 */
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.75em;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: 0.2s;
         }
+        .floating-filter-btn:hover { transform: scale(1.05); }
+        
+        /* [NEW] 드롭다운 필터 패널 (버튼 아래에 뜸) */
+        .filter-dropdown {
+            display: none;
+            position: fixed; /* 버튼 따라 고정 */
+            top: 95px; /* 버튼 아래 */
+            right: 10px;
+            width: 280px;
+            max-width: 90vw;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 901;
+        }
+        
+        .filter-section { margin-bottom: 15px; }
+        .filter-title { font-size: 0.9em; font-weight: bold; color: #666; margin-bottom: 8px; }
 
         .full-list-container { 
             padding: 10px 15px; 
@@ -73,7 +105,7 @@
         .raw-detail { display: none; padding: 15px; background-color: #ffffff; color: #333333; font-family: 'D2Coding', 'Consolas', monospace; font-size: 0.85em; white-space: pre-wrap; border-top: 1px solid #eee; line-height: 1.4; }
         .raw-detail.show { display: block; }
         
-        /* [상성 검색] 타입 버튼 */
+        /* [공통] 타입 버튼 그리드 */
         .type-grid { 
             display: grid; 
             grid-template-columns: repeat(6, 1fr); 
@@ -119,7 +151,6 @@
         .bg-x025 { background-color: #388E3C; }
         .bg-x0 { background-color: #111111; }
 
-        /* [상성 검색] 결과 카드 컨테이너 (Flexbox + calc) */
         .matchup-card-container { 
             display: flex;
             flex-wrap: wrap;
@@ -137,14 +168,11 @@
             justify-content: center;
             align-items: center;
             text-align: center;
-            
-            /* 모바일에서 무조건 2열 (50% - 여백) */
             flex: 0 0 calc(50% - 4px);
             width: calc(50% - 4px);
             box-sizing: border-box; 
         }
         
-        /* PC에서 4열 */
         @media (min-width: 600px) {
             .matchup-card {
                 flex: 0 0 calc(25% - 6px);
@@ -157,7 +185,6 @@
             font-weight: bold; 
             color: #333; 
             font-size: 0.95em; 
-            
             white-space: nowrap; 
             overflow: hidden; 
             text-overflow: ellipsis; 
@@ -187,9 +214,13 @@
             body { background-color: #121212; color: #e0e0e0; }
             .nav-tabs { background: #1e1e1e; border-bottom: 1px solid #333; }
             .nav-item { color: #aaa; }
-            #tab-list, .list-controls { background: #121212; border-color:#444; }
+            #tab-list { background: #121212; }
             .full-list-container { color: #ccc; }
             .raw-block { border-bottom-color: #444; }
+            
+            .floating-filter-btn { background-color: rgba(56, 142, 60, 0.9); }
+            .filter-dropdown { background-color: #1e1e1e; border-color: #444; }
+            .filter-title { color: #ccc; }
             
             .search-box, .card, .matchup-card { background-color: #1e1e1e; border-left-color: #444; border-color: #333; }
             input { background-color: #2d2d2d; border-color: #444; color: white; }
@@ -210,12 +241,23 @@
 </div>
 
 <div id="tab-list" class="tab-content active">
-    <div class="list-controls">
-        <label class="filter-label">
-            <input type="checkbox" id="chk-final-evo-list" checked onchange="filterFullList()">
-            최종 진화형만 보기
-        </label>
+    
+    <button class="floating-filter-btn" onclick="toggleListFilter()">▼ 상세 검색</button>
+    
+    <div id="list-filter-content" class="filter-dropdown">
+        <div class="filter-section">
+            <label class="filter-label">
+                <input type="checkbox" id="chk-final-evo-list" checked onchange="filterFullList()">
+                최종 진화형만 보기
+            </label>
+        </div>
+        <div class="filter-section">
+            <div class="filter-title">타입별 모아보기</div>
+            <div id="list-type-grid" class="type-grid">
+                </div>
+        </div>
     </div>
+
     <div id="full-list-container" class="full-list-container">
         </div>
 </div>
@@ -275,7 +317,7 @@
         "풀": "#3FA129", "얼음": "#3DCEF3", "격투": "#FF8000", "독": "#9141CB",
         "땅": "#915121", "비행": "#81B9EF", "에스퍼": "#EF4179", "벌레": "#91A119",
         "바위": "#AFA981", "고스트": "#704170", "드래곤": "#5060E1", "악": "#624D4E",
-        "강철": "#60A1B8", "페어리": "#EF70EF"
+        "강철": "#60A1B8", "페어리": "#EF70EF", "전체": "#555"
     };
 
     const typeRelations = {
@@ -305,6 +347,8 @@
         "바위", "고스트", "드래곤", "악", "강철", "페어리"
     ];
     let selectedType = "";
+    
+    let currentListType = "";
 
     const fullListContainer = document.getElementById('full-list-container');
     pokemonData.forEach((p, idx) => {
@@ -314,7 +358,24 @@
         div.textContent = p.raw;
         fullListContainer.appendChild(div);
     });
-    // 필터 기본 실행
+    
+    const listTypeGrid = document.getElementById('list-type-grid');
+    const allBtn = document.createElement('button');
+    allBtn.className = "type-btn selected"; 
+    allBtn.textContent = "전체";
+    allBtn.style.backgroundColor = typeColors["전체"];
+    allBtn.onclick = () => selectListType("", allBtn);
+    listTypeGrid.appendChild(allBtn);
+    
+    typeOrder.forEach(t => {
+        const btn = document.createElement('button');
+        btn.className = "type-btn";
+        btn.textContent = t;
+        btn.style.backgroundColor = typeColors[t];
+        btn.onclick = () => selectListType(t, btn);
+        listTypeGrid.appendChild(btn);
+    });
+    
     filterFullList();
 
     const dataList = document.getElementById('move-list');
@@ -336,9 +397,25 @@
 
     function selectType(t, btnElement) {
         selectedType = t;
-        document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+        document.querySelectorAll('#type-btn-grid .type-btn').forEach(b => b.classList.remove('selected'));
         btnElement.classList.add('selected');
         calcMatchup();
+    }
+    
+    function selectListType(t, btnElement) {
+        currentListType = t;
+        document.querySelectorAll('#list-type-grid .type-btn').forEach(b => b.classList.remove('selected'));
+        btnElement.classList.add('selected');
+        filterFullList();
+    }
+    
+    function toggleListFilter() {
+        const panel = document.getElementById('list-filter-content');
+        if(panel.style.display === "block") {
+            panel.style.display = "none";
+        } else {
+            panel.style.display = "block";
+        }
     }
 
     function switchTab(tabName) {
@@ -379,7 +456,6 @@
         }
     }
 
-    // [탭 1 기능] 전체 리스트 필터링
     function filterFullList() {
         const onlyFinal = document.getElementById('chk-final-evo-list').checked;
         
@@ -389,13 +465,20 @@
             
             if (onlyFinal && !p.is_final) {
                 block.style.display = 'none';
-            } else {
-                block.style.display = 'block';
+                return;
             }
+            
+            if (currentListType !== "") {
+                if (!p.type.includes(currentListType)) {
+                    block.style.display = 'none';
+                    return;
+                }
+            }
+            
+            block.style.display = 'block';
         });
     }
 
-    // [탭 2 기능] 기술 검색
     function searchPokemon() {
         const inputs = [
             document.getElementById('move1').value.trim(),
@@ -453,13 +536,12 @@
         });
     }
     
-    // [상성 검색 그룹 토글]
     window.toggleMatchupGroup = function(headerElem) {
         const container = headerElem.nextElementSibling;
         const arrow = headerElem.querySelector('.arrow');
         
         if (container.style.display === "none") {
-            container.style.display = "flex"; // Flex 복구
+            container.style.display = "flex"; 
             if(arrow) arrow.classList.remove('collapsed');
         } else {
             container.style.display = "none";
@@ -467,7 +549,6 @@
         }
     }
 
-    // [탭 3 기능] 상성 검색
     function calcMatchup() {
         if (!selectedType) return;
         
