@@ -22,12 +22,11 @@
         /* [탭 1: 전체 리스트] */
         #tab-list { width: 100%; max-width: 100%; background: #fff; min-height: 100vh; }
         
-        /* 전체 리스트 컨트롤러 (체크박스 영역) */
+        /* 리스트 컨트롤러 */
         .list-controls {
-            position: sticky; top: 54px; /* 탭 높이만큼 내림 */
-            background: #f9f9f9; padding: 10px 15px;
+            position: static; 
+            background: #f9f9f9; padding: 15px;
             border-bottom: 1px solid #ddd;
-            z-index: 90;
             display: flex; justify-content: flex-end;
         }
 
@@ -39,7 +38,6 @@
             line-height: 1.4; 
         }
         
-        /* 개별 포켓몬 텍스트 블록 */
         .raw-block {
             white-space: pre-wrap;
             margin-bottom: 20px;
@@ -47,7 +45,7 @@
             border-bottom: 1px dashed #eee;
         }
 
-        /* 검색창 등 공통 스타일 */
+        /* 공통 스타일 */
         .search-box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; box-sizing: border-box; }
@@ -64,7 +62,7 @@
         
         .result-count { margin: 0 0 10px 5px; font-weight: bold; color: #666; font-size: 0.9em; }
         
-        /* [기술 검색] 카드 스타일 */
+        /* [기술 검색] 카드 */
         .card { background: white; margin-bottom: 12px; border-radius: 10px; border-left: 5px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; }
         .card-header { padding: 12px 15px; cursor: pointer; transition: background 0.2s; }
         .card-header:hover { background-color: #f9f9f9; }
@@ -75,7 +73,7 @@
         .raw-detail { display: none; padding: 15px; background-color: #ffffff; color: #333333; font-family: 'D2Coding', 'Consolas', monospace; font-size: 0.85em; white-space: pre-wrap; border-top: 1px solid #eee; line-height: 1.4; }
         .raw-detail.show { display: block; }
         
-        /* [상성 검색] 타입 선택 버튼 그리드 (6열 3행) */
+        /* [상성 검색] 타입 버튼 */
         .type-grid { 
             display: grid; 
             grid-template-columns: repeat(6, 1fr); 
@@ -121,29 +119,51 @@
         .bg-x025 { background-color: #388E3C; }
         .bg-x0 { background-color: #111111; }
 
-        /* [상성 검색] 결과 카드 그리드 (CSS Grid 적용) */
+        /* [상성 검색] 결과 카드 컨테이너 (Flexbox + calc) */
         .matchup-card-container { 
-            display: grid;
-            /* 최소 105px 크기 유지하며 자동으로 채움 -> 모바일에서 3열 배치 유도 */
-            grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); 
-            gap: 6px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px; 
         }
         
         .matchup-card { 
             background: white; 
             border: 1px solid #eee; 
             border-radius: 10px; 
-            padding: 8px 4px; /* 내부 패딩 축소 */
+            padding: 10px 4px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
-            height: 100%; /* 높이 균등 */
+            
+            /* 모바일에서 무조건 2열 (50% - 여백) */
+            flex: 0 0 calc(50% - 4px);
+            width: calc(50% - 4px);
+            box-sizing: border-box; 
         }
         
-        .m-name-row { margin-bottom: 5px; font-weight: bold; color: #333; font-size: 0.9em; }
+        /* PC에서 4열 */
+        @media (min-width: 600px) {
+            .matchup-card {
+                flex: 0 0 calc(25% - 6px);
+                width: calc(25% - 6px);
+            }
+        }
+        
+        .m-name-row { 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+            color: #333; 
+            font-size: 0.95em; 
+            
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            max-width: 100%;
+            padding: 0 2px;
+        }
         .m-type-row { font-size: 0.8em; }
         
         .matchup-class { 
@@ -154,9 +174,9 @@
             border: 1px solid #FF5722; 
             padding: 0px 3px; 
             border-radius: 4px; 
-            margin-right: 2px;
+            margin-right: 3px;
             display: inline-block;
-            white-space: nowrap; 
+            vertical-align: middle;
         }
 
         .type-badge { color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75em; font-weight: bold; text-shadow: 1px 1px 0 rgba(0,0,0,0.2); }
@@ -286,7 +306,6 @@
     ];
     let selectedType = "";
 
-    // [초기화 1] 전체 리스트 생성
     const fullListContainer = document.getElementById('full-list-container');
     pokemonData.forEach((p, idx) => {
         const div = document.createElement('div');
@@ -295,10 +314,9 @@
         div.textContent = p.raw;
         fullListContainer.appendChild(div);
     });
-    // 초기 필터링 (기본값 ON이므로 실행)
+    // 필터 기본 실행
     filterFullList();
 
-    // [초기화 2] 기술 목록
     const dataList = document.getElementById('move-list');
     moveList.forEach(m => {
         const opt = document.createElement('option');
@@ -306,7 +324,6 @@
         dataList.appendChild(opt);
     });
 
-    // [초기화 3] 타입 버튼
     const typeGrid = document.getElementById('type-btn-grid');
     typeOrder.forEach(t => {
         const btn = document.createElement('button');
@@ -442,7 +459,7 @@
         const arrow = headerElem.querySelector('.arrow');
         
         if (container.style.display === "none") {
-            container.style.display = "grid"; // Grid로 복구
+            container.style.display = "flex"; // Flex 복구
             if(arrow) arrow.classList.remove('collapsed');
         } else {
             container.style.display = "none";
